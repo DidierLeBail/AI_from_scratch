@@ -50,7 +50,7 @@ class Embedding(nn.Module):
 	):
 		super().__init__()
 		self.W_emb_tok = init_tensor(vocab_size, emb_dim)
-		r = N ** (emb_dim / 2)
+		r = N ** (-2 / emb_dim)
 		t = torch.arange(context_size)
 		thetas = [t * r ** k for k in range(emb_dim // 2)]
 		self.X_emb_pos = torch.transpose(
@@ -226,12 +226,12 @@ class Encoder(nn.Module):
 		return F.dropout(X, p=self.drop_proba)
 
 	def forward(self, X):
-		X_emb = F.dropout(self.emb.forward(X), p=self.drop_proba)
+		X_emb = F.dropout(self.emb(X), p=self.drop_proba)
 		for layer in range(self.nb_layers):
-			Y = X_emb + self._dropout(self.att_subs[layer].forward(self.norm_subs[layer][0].forward(X_emb)))
+			Y = X_emb + self._dropout(self.att_subs[layer](self.norm_subs[layer][0](X_emb)))
 
-			X_emb = Y + self._dropout(self.ff_subs[layer].forward(self.norm_subs[layer][1].forward(Y)))
-		return self.last_norm.forward(X_emb)
+			X_emb = Y + self._dropout(self.ff_subs[layer](self.norm_subs[layer][1](Y)))
+		return self.last_norm(X_emb)
 
 class Test:
 	def __init__(self):
@@ -253,7 +253,7 @@ class Test:
 		# dummy data (batch assumed)
 		X = torch.rand(1, config["context_size"], config["vocab_size"])
 
-		Y = enc.forward(X)
+		Y = enc(X)
 
 if __name__ == "__main__":
 	Test().encoder()
