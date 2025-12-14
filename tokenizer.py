@@ -274,7 +274,7 @@ def test_tok_building():
 def final_test():
     """Train a tokenizer on a corpus, then use it to encode and decode back a new string.
     """
-    
+
     corpus = """In computing, byte-pair encoding (BPE), or digram coding, is an algorithm, first described in 1994 by Philip Gage, """ + \
             """for encoding strings of text into smaller strings by creating and using a translation table. """ + \
             """A slightly modified version of the algorithm is used in large language model tokenizers. """ + \
