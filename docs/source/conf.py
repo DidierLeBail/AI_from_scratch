@@ -20,8 +20,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'AI from scratch'
-copyright = '2025, Matthieu and Parsa'
-author = 'Matthieu and Parsa'
+copyright = '2025, Didier'
+author = 'Didier'
 release = '0.0.1'
 
 # -- General configuration ---------------------------------------------------
