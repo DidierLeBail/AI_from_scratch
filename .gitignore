@@ -6,3 +6,4 @@ docs/source/_autosummary
 **/models_saved/
 **/customUnet.py
 .venv
+**/.vscode/
