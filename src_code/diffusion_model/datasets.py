@@ -9,7 +9,7 @@ from torchvision.datasets import MNIST
 from torchvision.transforms.functional import pad
 import matplotlib.pyplot as plt
 
-from diffusion_model.configurations import Config_mnist
+from configurations import Config_mnist
 
 def single_dot_training_set(
         img_size: Tuple[int, int],

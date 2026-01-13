@@ -10,9 +10,9 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from platform import system
 
-from diffusion_model.configurations import Config_dfp, Config_mnist, Config_training, Config_drp
-import diffusion_model.models as models
-import diffusion_model.datasets as datasets
+from configurations import Config_dfp, Config_mnist, Config_training, Config_drp
+import models as models
+import datasets as datasets
 
 class DiffusionForwardProcess:
     r"""Forward diffusion process, to add a Gaussian noise to an image.
