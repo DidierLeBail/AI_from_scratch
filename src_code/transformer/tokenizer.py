@@ -2,6 +2,7 @@
 A simple byte-pair encoding tokenizer.
 First, a tokenizer of strings is built, then generalized to UTF-8 strings.
 """
+
 from typing import List, Union, Dict, Tuple
 
 class Trie:

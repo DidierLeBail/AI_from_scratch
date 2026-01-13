@@ -8,7 +8,7 @@ from torchvision.datasets import MNIST
 from torchvision.transforms.functional import pad
 import matplotlib.pyplot as plt
 
-from diffusion_model.configurations import Config_mnist
+from configurations import Config_mnist
 
 def single_dot_training_set(
         img_size: Tuple[int, int],
@@ -97,12 +97,14 @@ class CustomMnist(MNIST):
 def display_mat(
     mat: torch.Tensor
 ):
-    r"""Display an integer-valued matrix as an image.
+    r"""Displays an integer-valued matrix as an image.
+    
+    Use `plt.show()` to visualize the figure.
     
     Parameters
     ----------
     mat : torch.Tensor
-        the matrix to visualize
+        the matrix (2D tensor) to visualize
     """
 
     _, ax = plt.subplots(constrained_layout=True)

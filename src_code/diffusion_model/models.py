@@ -2,6 +2,7 @@
 
 For the implementation of the U-net architecture with time embedding, we use the implementation of HuggingFace.
 """
+
 from diffusers import UNet2DModel
 import torch
 

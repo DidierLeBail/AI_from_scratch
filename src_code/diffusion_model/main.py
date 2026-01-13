@@ -1,6 +1,8 @@
 """
 Implement a simple diffusion model using backward Langevin dynamics and a score vector function learned by a neural network (differential model).
 """
+
+from typing import Tuple
 import matplotlib.pyplot as plt
 import torch
 from torch.nn import MSELoss
@@ -8,18 +10,24 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from platform import system
 
-from diffusion_model.configurations import Config_ddpm, Config_mnist, Config_training
-import diffusion_model.models as models
-import diffusion_model.datasets as datasets
+from configurations import Config_dfp, Config_mnist, Config_training, Config_drp
+import models as models
+import datasets as datasets
 
 class DiffusionForwardProcess:
-    r"""
-    Forward Process class as described in the 
-    paper "Denoising Diffusion Probabilistic Models"
+    r"""Forward diffusion process, to add a Gaussian noise to an image.
+     
+    References
+    ----------
+    We implement the algorithm described in [1]_.
+
+    .. [1] Ho, J., Jain, A., & Abbeel, P. (2020).
+       Denoising diffusion probabilistic models.
+       Advances in neural information processing systems, 33, 6840-6851.
     """
     
     def __init__(self,
-        cfg: Config_ddpm
+        cfg: Config_dfp
     ):
         self.n_steps = cfg.n_forward_steps
 
@@ -36,44 +44,71 @@ class DiffusionForwardProcess:
         noise: torch.Tensor,
         t: torch.Tensor
     ):
-        r"""Adds noise to a batch of original images at time-step t.
+        r"""Adds noise to a batch of original images at time step `t`.
         
-        :param original: Input Image Tensor
-        :param noise: Random Noise Tensor sampled from Normal Dist N(0, 1)
-        :param t: timestep of the forward process of shape -> (B, )
-        
-        Notes
-        -----
-        time-step t may differ for each image inside the batch.
+        Parameters
+        ----------
+        original : torch.Tensor
+            the input, of shape B x C x H x W
+        noise : torch.Tensor
+            the noise to add to the input, of shape B x C x H x W
+        t : torch.Tensor[int]
+            the time step *k* is associated to the *k* th image in the batch (shape B)
         """
         return self.sqrt_a_bar.to(original.device)[t][:, None, None] * original \
             + self.sqrt_one_minus_a_bar.to(original.device)[t][:, None, None] * noise
 
 class DiffusionReverseProcess:
-    r"""Reverse Process class as described in the 
-    paper "Denoising Diffusion Probabilistic Models"
+    r"""Reverse diffusion process, to denoise an image.
+     
+    References
+    ----------
+    We implement the algorithms described in [1]_ and [2]_.
+
+    .. [1] Ho, J., Jain, A., & Abbeel, P. (2020).
+       Denoising diffusion probabilistic models.
+       Advances in neural information processing systems, 33, 6840-6851.
+    .. [2] Song, J., Meng, C., & Ermon, S. (2020).
+       Denoising diffusion implicit models. arXiv preprint arXiv:2010.02502.
     """
     
-    def __init__(self, 
-        num_time_steps = 1000, 
-        beta_start = 1e-4, 
-        beta_end = 0.02
+    def __init__(self,
+        cfg: Config_drp
     ):
+        self.n_backward_steps = cfg.n_backward_steps
+
         # Precomputing beta, alpha, and alpha_bar for all t's.
-        self.b = torch.linspace(beta_start, beta_end, num_time_steps)
+        self.b = torch.linspace(cfg.b_start, cfg.b_end, cfg.n_backward_steps)
         self.a = 1 - self.b
         self.a_bar = torch.cumprod(self.a, dim=0)
         self.sqrt_a_bar = torch.sqrt(self.a_bar)
         self.sqrt_one_minus_a_bar = torch.sqrt(1 - self.a_bar)
 
-    def sample_prev_time_ddim(self, xt, noise_pred, t):
-        r"""Sample x_(t-1) given x_t and noise predicted by model, by following the dynamics
-        of the deterministi DDIM backward process.
+        # the sampling strategy
+        if cfg.sampling_strategy == "ddim":
+            self.sample_prev_time = self.sample_prev_time_ddim
+        elif cfg.sampling_strategy == "ddim":
+            self.sample_prev_time = self.sample_prev_time_ddpm
+        else:
+            raise ValueError("the sampling strategy should be either 'ddim' or 'ddpm'")
+
+    def sample_prev_time_ddim(self,
+        xt:torch.Tensor,
+        noise_pred:torch.Tensor,
+        t:int
+    ):
+        r"""Sample `x(t-1)` given `x(t)` and `noise_pred` the noise predicted by model.
+        We follow the deterministic DDIM backward process.
         This allows `num_time_steps` to be smaller than the nb of steps in the forward process.
         
-        :param xt: Image tensor at timestep t of shape -> B x C x H x W
-        :param noise_pred: Noise Predicted by model of shape -> B x C x H x W
-        :param t: Current time step
+        Parameters
+        ----------
+        xt : torch.Tensor
+            image at timestep `t`, of shape B x C x H x W
+        noise_pred : torch.Tensor
+            predicted noise, of shape B x C x H x W
+        t : int
+            current time step
         """
         mean = (xt - self.sqrt_one_minus_a_bar[t].to(xt.device) * noise_pred) / self.sqrt_a_bar[t].to(xt.device)
         if t == 0:
@@ -82,12 +117,17 @@ class DiffusionReverseProcess:
             + self.sqrt_one_minus_a_bar[t - 1].to(xt.device) * noise_pred
 
     def sample_prev_time_ddpm(self, xt, noise_pred, t):
-        r"""Sample x_(t-1) given x_t and noise predicted by model, by following the reverse dynamics
-        of the forward process.
+        r"""Sample `x(t-1)` given `x(t)` and `noise_pred` the noise predicted by model.
+        We follow the reverse dynamics of the forward process.
         
-        :param xt: Image tensor at timestep t of shape -> B x C x H x W
-        :param noise_pred: Noise Predicted by model of shape -> B x C x H x W
-        :param t: Current time step
+        Parameters
+        ----------
+        xt : torch.Tensor
+            image at timestep `t`, of shape B x C x H x W
+        noise_pred : torch.Tensor
+            predicted noise, of shape B x C x H x W
+        t : int
+            current time step
         """
         # mean of x_(t-1)
         mean = xt - (1 - self.a.to(xt.device)[t]) * noise_pred / torch.sqrt(1 - self.a_bar.to(xt.device)[t])
@@ -103,6 +143,8 @@ class DiffusionReverseProcess:
         return mean + sigma * z
     
 def get_device():
+    """Determine the gpu device available (if any) on the current machine.
+    """
     if system() == 'Darwin':
         best_device = 'mps'
         is_available = torch.mps.is_available()
@@ -117,6 +159,17 @@ def train(
     model: torch.nn.Module,
     dfp: DiffusionForwardProcess
 ):
+    r"""Train `model` according to the specifications in `cfg_train`.
+    `dfp`is used to add noise to the samples, which are drawn from `dataset`.
+
+    Each time the model achieves a better accuracy,
+    it is saved at the path indicated in `cfg_train`.
+
+    Returns
+    -------
+    logs : Dict[str, List]
+        data collected to have some information about how the training has gone
+    """
     # Dataloader
     dataloader = DataLoader(dataset, cfg_train.batch_size, shuffle=True, drop_last=True)
     
@@ -191,27 +244,37 @@ def train(
     print('Done training.....')
     return logs
 
-def generate(cfg: Config_ddpm, model, drp, device):
-    """Given Pretrained DDPM U-net model, Generate Real-life
-    Images from noise by going backward step by step. i.e.,
-    Mapping of Random Noise to mnist images.
+def generate(
+    img_size: Tuple[int, int],
+    model: torch.nn.Module,
+    drp: DiffusionReverseProcess,
+    device: torch.device
+):
+    r"""Generate an image from an initial Gaussian noise by using `model` to predict
+    the noise at each time step, and using `drp` to infer the denoised sample at
+    previous time step.
+
+    Returns
+    -------
+    x0 : torch.Tensor
+        the generated image, or the inferred initial condition
+        of the forward diffusion process
     """
-    # Set model to eval mode
+    # set model to eval mode
     model = model.to(device)
     model.eval()
     
-    # Generate Noise sample from N(0, 1)
-    xt = torch.randn(1, cfg.img_size, cfg.img_size).to(device)
+    # generate noise sample
+    xt = torch.randn(1, *img_size).to(device)
     
-    # Denoise step by step by going backward.
+    # denoise step by step
     with torch.no_grad():
-        for t in reversed(range(cfg.n_backward_steps)):
+        for t in reversed(range(drp.n_backward_steps)):
             noise_pred = model(xt, torch.as_tensor(t).unsqueeze(0).to(device))
-            xt = drp.sample_prev_time_ddim(xt, noise_pred, torch.as_tensor(t).to(device))
+            xt = drp.sample_prev_time(xt, noise_pred, torch.as_tensor(t).to(device))
 
-    # Convert the image to proper scale
-    # xt = torch.clamp(xt, -1., 1.).detach().cpu().view(cfg.img_size, cfg.img_size)
-    xt = xt.detach().cpu().view(cfg.img_size, cfg.img_size)
+    # get the image into the correct format
+    xt = xt.detach().cpu().view(*img_size)
     
     return (xt + 1) / 2
 
@@ -246,10 +309,10 @@ def whole_train():
     print("nb of model parameters:", models.count_params(model))
     print()
 
-    cfg_ddpm = Config_ddpm()
+    cfg_dfp = Config_dfp()
     cfg_train = Config_training()
 
-    dfp = DiffusionForwardProcess(cfg_ddpm)
+    dfp = DiffusionForwardProcess(cfg_dfp)
 
     logs = train(dataset, cfg_train, model, dfp)
 
@@ -263,37 +326,41 @@ def whole_train():
 
 def whole_sample():
     # load the trained model
-    model_path = Config_training().model_path
+    model_path = Config_training.model_path
     model = torch.load(model_path, weights_only=False)
+
+    # load the image size
+    img_size = Config_mnist.img_size
 
     # generate some samples with the trained model
     prefix = "src_code/diffusion_model/figures/"
 
-    # Device
+    # get the device
     device = get_device()
-    cfg = Config_ddpm()
 
-    # Initialize Diffusion Reverse Process
-    drp = DiffusionReverseProcess(cfg.n_backward_steps)
+    # initialize the Diffusion Reverse Process
+    drp = DiffusionReverseProcess(Config_drp())
     
     print()
     print("sampling from the trained model...")
 
     for k in tqdm(range(4)):
-        datasets.display_mat(generate(cfg, model, drp, device))
+        datasets.display_mat(generate(img_size, model, drp, device))
         plt.savefig(prefix + str(k) + ".png")
 
 if __name__ == "__main__":
+    # will train a UNet2DModel on a small subset (8 samples) of the mnist dataset
     # whole_train()
 
+    # will load the trained model and generate 4 samples according to
+    # the deterministic DDIM sampling strategy
+    # these samples are stored in "figures/"
     whole_sample()
 
-    # print the images of the training set
-    """
+    # visualize the images of the training set (8 here)
     config_dataset = Config_mnist()
 
     dataset = datasets.CustomMnist(config_dataset)
     for img in dataset:
         datasets.display_mat(img)
         plt.show()
-    """
