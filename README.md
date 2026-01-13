@@ -26,6 +26,8 @@ Here an implementation of the multi-head attention mechanism, of the encoder par
 ## docs/
 You can find the built documentation in the file "docs/build/html/index.html".
 Open it in a web browser to visualize it.
+If the docs seem to disappear after expanding the table of contents tree, just scroll down:
+you will find the text there.
 
 To build the docs by yourself, go to the directory "docs/" and run
 ```shell
