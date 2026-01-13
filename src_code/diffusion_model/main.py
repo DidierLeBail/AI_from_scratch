@@ -25,7 +25,7 @@ class DiffusionForwardProcess:
        Denoising diffusion probabilistic models.
        Advances in neural information processing systems, 33, 6840-6851.
     """
-    
+
     def __init__(self,
         cfg: Config_dfp
     ):
@@ -65,13 +65,14 @@ class DiffusionReverseProcess:
     ----------
     We implement the algorithms described in [1]_ and [2]_.
 
-    .. [1] Ho, J., Jain, A., & Abbeel, P. (2020).
+    .. [1] Ho, J., Jain, A., \& Abbeel, P. (2020).
        Denoising diffusion probabilistic models.
        Advances in neural information processing systems, 33, 6840-6851.
-    .. [2] Song, J., Meng, C., & Ermon, S. (2020).
+
+    .. [2] Song, J., Meng, C., \& Ermon, S. (2020).
        Denoising diffusion implicit models. arXiv preprint arXiv:2010.02502.
     """
-    
+
     def __init__(self,
         cfg: Config_drp
     ):
@@ -160,7 +161,7 @@ def train(
     dfp: DiffusionForwardProcess
 ):
     r"""Train `model` according to the specifications in `cfg_train`.
-    `dfp`is used to add noise to the samples, which are drawn from `dataset`.
+    `dfp` is used to add noise to the samples, which are drawn from `dataset`.
 
     Each time the model achieves a better accuracy,
     it is saved at the path indicated in `cfg_train`.

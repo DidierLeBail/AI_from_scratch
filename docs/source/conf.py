@@ -14,7 +14,9 @@
 # add the directory containing the code to sys.path, so that Sphinx can import any module that must be documented
 import sys, os
 from pathlib import Path
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "src_code"))
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.join(project_root, "src_code"))
+sys.path.insert(0, os.path.join(project_root, "src_code/diffusion_model"))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information

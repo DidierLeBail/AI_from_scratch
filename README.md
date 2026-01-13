@@ -17,14 +17,17 @@ Contains the source code.
 Two directories can be found there:
 
 ### diffusion_model/
-
 Here an implementation of a diffusion model, where a [UNet2DModel](https://huggingface.co/docs/diffusers/api/models/unet2d) is trained as a denoiser.
 The current implementation is tested on the MNIST dataset.
 
 ### transformer/
-
 Here an implementation of the multi-head attention mechanism, of the encoder part of the original Transformer architecture, and a tokenizer, implementing the byte-pair encoding algorithm (except it parses strings instead of byte streams).
 
 ## docs/
-Do not try to build the doc by yourself.
-Just open the file "docs/build/html/index.html" in a web browser.
+You can find the built documentation in the file "docs/build/html/index.html".
+Open it in a web browser to visualize it.
+
+To build the docs by yourself, go to the directory "docs/" and run
+```shell
+zsh make_doc.sh
+```
