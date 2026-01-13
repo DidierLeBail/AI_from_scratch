@@ -1,6 +1,7 @@
 """Gathers datasets of images (integer-valued matrices),
 for training vision-based diffusion models.
 """
+
 from typing import Tuple
 import torch
 from torch.utils.data import TensorDataset
@@ -8,7 +9,7 @@ from torchvision.datasets import MNIST
 from torchvision.transforms.functional import pad
 import matplotlib.pyplot as plt
 
-from configurations import Config_mnist
+from diffusion_model.configurations import Config_mnist
 
 def single_dot_training_set(
         img_size: Tuple[int, int],
@@ -79,7 +80,7 @@ class CustomMnist(MNIST):
 
         self.data = self.data[:cfg.set_size]
         self.pad_size = (cfg.img_size[0] - 28) // 2
-    
+
     def __getitem__(self, index: int) -> torch.Tensor:
         """
         Parameters
