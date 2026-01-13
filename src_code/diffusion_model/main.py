@@ -303,7 +303,7 @@ def whole_sample():
         plt.savefig(prefix + str(k) + ".png")
 
 if __name__ == "__main__":
-    # whole_train()
+    whole_train()
 
     whole_sample()
 

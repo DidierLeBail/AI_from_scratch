@@ -1,0 +1,8 @@
+# for visualization purposes
+matplotlib==3.9.4
+tqdm==4.67.1
+
+# machine learning libraries
+torch==2.8.0 # !!! and not pytorch !!!
+torchvision==0.23.0
+diffusers==0.36.0

@@ -4,3 +4,5 @@ docs/source/_autosummary
 **/figures/
 **/train_data/
 **/models_saved/
+**/customUnet.py
+.venv
