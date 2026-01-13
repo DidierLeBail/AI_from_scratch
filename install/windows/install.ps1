@@ -1,7 +1,7 @@
-# generate the folder structure "figures" "models_saved" "train_data"
+# generate the folder structure
 $prefix="..\..\src_code\diffusion_model\"
 
-$names = 'test1','test2'
+$names = "figures","models_saved","train_data"
 foreach ($name in $names) {
     if (!(& test-path -PathType "container" "${prefix}$name"))
     {

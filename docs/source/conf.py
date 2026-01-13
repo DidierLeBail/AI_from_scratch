@@ -48,6 +48,9 @@ autosummary_generate = True
 # the objects appear in the documentation in the same order as in the code
 autodoc_member_order = 'bysource'
 
+# do not include the torch documentation in ours
+autodoc_mock_imports = ['torch', 'torchvision', 'diffusers']
+
 templates_path = ['_templates']
 exclude_patterns = []
 

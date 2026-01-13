@@ -7,8 +7,8 @@ import torch
 
 def count_params(
     model: torch.nn.Module
-):
-    """Return the number of parameters in `model`.
+) -> int:
+    r"""Returns the number of parameters in `model`.
 
     Parameters
     ----------
@@ -21,10 +21,21 @@ def count_params(
     return nb_params.item()
 
 class CustomUnet(UNet2DModel):
+    r"""Wraps the UNet2DModel of HuggingFace to make its call simpler.
+    """
+
     def __init__(self, **kwargs):
         UNet2DModel.__init__(self, **kwargs)
+
     def forward(self, sample: torch.Tensor, timestep):
-        """Sample is supposed to be of shape (batch_size, *img_size).
+        r"""
+        Parameters
+        ----------
+        sample : torch.Tensor
+            the image to denoise ;
+            of shape `(batch_size, \*img_size)`
+        timestep : Union[int, torch.Tensor]
+            the time step in the forward process, indicative of the level of noise in `sample`
         """
         shape = sample.shape
         return super().forward(

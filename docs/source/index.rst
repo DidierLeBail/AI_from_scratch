@@ -10,15 +10,7 @@ Welcome to AI from scratch's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   usage/quickstart
-   usage/installation
-
-.. autosummary::
-   :toctree: _autosummary
-   :template: custom-module.rst
-   :recursive:
-
-   diffusion_model
+   modules
 
 Indices and tables
 ==================
