@@ -1,2 +1,0 @@
-Dummy doc for quickstart
-########################
