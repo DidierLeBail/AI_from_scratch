@@ -1,1 +1,6 @@
 **/__pycache__
+**/figures/
+**/train_data/
+**/models_saved/
+.venv
+**/.vscode/

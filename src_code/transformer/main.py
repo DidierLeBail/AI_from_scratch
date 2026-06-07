@@ -1,24 +1,9 @@
-"""
-see also:
-https://en.wikipedia.org/wiki/Re-Pair
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 def init_tensor(*size, scale_dim=0):
 	return (2 * torch.rand(*size, requires_grad=True) - 1) / torch.sqrt(torch.tensor(size[scale_dim]))
-
-class Tokenizer(nn.Module):
-	"""
-	Takes as input a sequence of words and outputs a sequence of one-hot encoded tokens.
-	This tokenizer is tuned on a training corpus by using recursive byte pair encoding.
-	"""
-	def __init__(self,
-		**kwargs
-	):
-		pass
 
 class Embedding(nn.Module):
 	"""
