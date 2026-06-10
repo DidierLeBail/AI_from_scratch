@@ -3,6 +3,7 @@
 
 from typing import List, Callable, Union
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Prior:
     """A prior is a distribution over integers.
@@ -86,6 +87,11 @@ class Computer:
     goals : numpy.ndarray
         list of all possible values for the user goal
         (here same values as the stimulus)
+    cache : Dict[str, Any]
+        stores information that may be collected for an analysis of the computer behavior ;
+        contains as keys:
+        - "utility"
+        - "uncertainty"
     """
 
     def __init__(self,
@@ -99,7 +105,12 @@ class Computer:
         self.nb_stim = nb_stim
         self.goals = np.arange(nb_stim, dtype=int)
         self.nb_actions = nb_actions
-    
+
+        self.cache = {
+            "utility": None,
+            "uncertainty": None
+        }
+
     def init_stimulus(self, rng: np.random.Generator):
         """Here drawing a stimulus is the same as drawing a goal."""
         return self.prior.draw(rng)
@@ -109,6 +120,8 @@ class Computer:
         """
         self.prior.probas *= self.model(user_action, stimulus, self.goals)
         self.prior.probas /= np.sum(self.prior.probas)
+
+        self.cache["uncertainty"] = - np.sum( self.prior.probas * np.log2(self.prior.probas) )
 
     def utility(self, stimulus: int):
         """Computes the utility of `stimulus`:
@@ -141,11 +154,16 @@ class Computer:
             utilities[stim] = self.utility(stim)
         
         # pick the stimulus of highest utility
-        return np.argmax(utilities)
+        stim = np.argmax(utilities)
+
+        self.cache["utility"] = utilities[stim]
+        return stim
 
 if __name__ == "__main__":
+    rng = np.random.default_rng(seed=None)
+
     # define the user
-    nb_goals = 20
+    nb_goals = 50
     probas = np.ones(nb_goals) / nb_goals
     true_prior = Prior(nb_goals, probas)
 
@@ -204,7 +222,6 @@ if __name__ == "__main__":
     computer = Computer(prior, model, nb_stim, nb_actions)
 
     # make the two interact until the user goal has been reached
-    rng = np.random.default_rng(seed=None)
     user.pick_goal(rng)
     
     print(f"goal chosen by the user: {user.goal}")
@@ -216,12 +233,27 @@ if __name__ == "__main__":
     print()
 
     nb_trials = 0
+    uncertainties = []
+    igs = []
     while stim != user.goal:
         action = user.pick_action(stim)
         stim = computer.pick_stimulus(stim, action)
-        #print(f"new stimulus sent by the computer: {stim}")
-        #print()
         nb_trials += 1
+
+        uncertainties.append(computer.cache["uncertainty"])
+        igs.append(computer.cache["utility"])
     
     print(f"user goal guessed by the computer in {nb_trials} trials!")
-    print(f"average nb of trials if dichotomy: {np.round(np.log2(100), 2)}")
+    print(f"maximum nb of trials if dichotomy: {np.round(np.log2(nb_goals), 2)}")
+
+    fig, ax = plt.subplots(1, 1, constrained_layout=True)
+    fontsize = 16
+    ax.set_xlabel("nb of trials", fontsize=fontsize)
+    ax.set_ylabel("amount of information (bits)", fontsize=fontsize)
+    
+    ax.plot(uncertainties, '.', color='r', label='uncertainty')
+    ax.plot(igs, 'x', color='k', label='info gain')
+    ax.legend(fontsize=fontsize)
+
+    ax.tick_params(labelsize=fontsize)
+    plt.show()
