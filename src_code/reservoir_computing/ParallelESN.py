@@ -1,6 +1,7 @@
 """Defines the Parallel Echo State Network described [here](https://arxiv.org/pdf/2601.22296).
 """
 
+from typing import Literal
 import torch
 import torch.nn.functional as F
 
@@ -118,22 +119,86 @@ class ReservoirFirstLayer(torch.nn.Module):
 
 class ParallelESN(torch.nn.Module):
     """The deep parallel echo state network.
-    
+
+    The strength of this model is its ability to process in parallel multiple time steps of the input time series.
+    This is possible by combining an associative scan with the linear dependence of the hidden state between time steps.
+
+    Notes
+    -----
+    The input `xs` is a real-valued tensor of size `B x T x n_in`.
+    The output is a real-valued tensor of size `B x T x n_out` if the model is used as a sequence-to-sequence mapping
+    (`mode='seqToSeq'`),
+    and of size `B x n_out` is it is used e.g. as a classifier (`mode='classifier'`).
+
     Parameters
     ----------
     n_layers : int
-        the number of layers other than the first layer (nb of `ReservoirLayer` blocks)
+        the total number of layers (nb of `ReservoirLayer` + `ReservoirFirstLayer` blocks)
+    
+    Attributes
+    ----------
+    mixers : List[MixingBlock]
+        There are `n_layers` mixers.
+    reservoirs : List[Union[ReservoirFirstLayer, ReservoirLayer]]
+        Each layer has a reservoir and a mixer.
     """
 
     def __init__(self,
         n_layers: int,
         n_hid: int,
         n_in: int,
-        leakyRate: float
+        n_out: int,
+        mode: Literal['classifier', 'seqToSeq'],
+        leakyRate: float,
+        kernelSize: int
     ):
         super().__init__()
         self.n_layers = n_layers
-        
+        self.n_hid = n_hid
+
+        self.mixers = torch.nn.ModuleList(
+            [MixingBlock(kernelSize=kernelSize) for _ in range(n_layers)]
+        )
+        self.reservoirs = torch.nn.ModuleList(
+            [ReservoirFirstLayer(n_hid, n_in, leakyRate)].extend(
+                [ReservoirLayer(n_hid, leakyRate) for _ in range(n_layers - 1)]
+            )
+        )
     
-    def forward(self, x: torch.Tensor):
+    def forward(self, xs: torch.Tensor):
+        # initialize the hidden state
+        h = torch.rand(self.n_hid)
+        for t in range(xs.size(dim=1)):
+            pass
+
+
+class ParaLin(torch.nn.Module):
+    """Implementation of a simple linear model
+    augmented with the parallel associative scan algorithm.
+
+    Notes
+    -----
+    The input is of size `B x T x n_in`.
+    The output is of size `B x n_hid`.
+
+    The hidden state is updated according to:
+    h_t = transMat h_{t-1} + inMat x_{t} + bias
+    """
+
+    def __init__(self,
+        n_in: int,
+        n_hid: int
+    ):
+        super().__init__()
+        self.n_in = n_in
+        self.n_hid = n_hid
+
+        self.transMat = torch.ones(n_hid, dtype=torch.complex32)
+        self.inMat = torch.ones( (n_hid, n_in), dtype=torch.complex32 )
+        self.bias = torch.zeros(n_hid, dtype=torch.complex32)
+    
+    def combine_fn(self, x, y):
+        return x * y
+
+    def forward(self, xs: torch.Tensor):
         pass
